@@ -1,0 +1,1 @@
+# openclaw-ide-extension
