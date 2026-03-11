@@ -118,7 +118,8 @@
     "compile:dev": "webpack --mode development",
     "watch": "webpack --mode development --watch",
     "lint": "tsc --noEmit",
-    "package": "vsce package --no-dependencies"
+    "package": "vsce package --no-dependencies",
+    "package:vsix": "mkdir -p dist && pnpm dlx @vscode/vsce package --no-yarn --no-dependencies --out /tmp/openclaw-ide-extension-${npm_package_version}.vsix && cp /tmp/openclaw-ide-extension-${npm_package_version}.vsix ./dist/openclaw-ide-extension-${npm_package_version}.vsix"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
