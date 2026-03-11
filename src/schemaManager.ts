@@ -5,15 +5,24 @@
  * Merges plugin schema contributions on top of the base schema.
  *
  * Discovery priority (highest → lowest):
- *   1. Files shipped with the LOCAL openclaw package installation
- *      (version-exact; highest fidelity)
- *   2. Per-version cache on disk (avoids re-fetching on each activation)
- *   3. Bundled schema in this extension (always available, version-agnostic fallback)
+ *   1. Generated from the LOCAL openclaw package's TypeScript type declarations
+ *      using ts-json-schema-generator (version-exact; highest fidelity)
+ *   2. Files shipped with the LOCAL openclaw package installation
+ *   3. Per-version cache on disk (avoids re-generating on each activation)
+ *   4. Bundled schema in this extension (always available, version-agnostic fallback)
  *
  * Plugin contributions are discovered from:
  *   a. package.json "openclaw.schemaContributions" field of each plugin
  *   b. A `openclaw-schema.json` / `schema.json` file in the plugin root
  *   c. Hardcoded well-known plugin schemas (see wellKnownPlugins.ts)
+ *
+ * Schema generation approach:
+ *   When openclaw is installed, the extension runs the bundled
+ *   scripts/generate-schema.mjs script against the installed package's
+ *   dist/plugin-sdk/config/types.openclaw.d.ts to produce a version-exact
+ *   JSON Schema Draft 7.  This "generate from source code" approach is
+ *   possible because openclaw is open-source and ships its TypeScript type
+ *   declarations in the npm package.
  */
 import * as vscode from 'vscode';
 import * as fs from 'fs';
@@ -97,7 +106,20 @@ export class SchemaManager {
       return null;
     }
 
-    // Candidate schema file paths inside the openclaw package directory
+    // ── Strategy 1: Generate schema from TypeScript type declarations ─────────
+    //
+    // openclaw is open-source and ships its full TypeScript type declarations
+    // in the npm package (dist/plugin-sdk/config/types.openclaw.d.ts).
+    // We use ts-json-schema-generator to convert those declarations to a
+    // version-exact JSON Schema Draft 7 — the most accurate approach possible.
+    const generatedSchema = await this.trySchemaGeneration(runtime);
+    if (generatedSchema) {
+      return { schema: generatedSchema, source: 'local-install', version: runtime.version };
+    }
+
+    // ── Strategy 2: Look for pre-existing schema files ────────────────────────
+    //
+    // In case openclaw ever ships a pre-built schema file in a future version.
     const candidates = [
       'dist/config-schema.json',
       'dist/schema/openclaw.schema.json',
@@ -106,7 +128,6 @@ export class SchemaManager {
       'src/config-schema.json',
       'config-schema.json',
       'openclaw.schema.json',
-      // TypeScript-generated JSON schemas
       'dist/types/config.schema.json',
       'dist/generated/schema.json',
     ];
@@ -127,12 +148,107 @@ export class SchemaManager {
       }
     }
 
-    // Try introspecting via the CLI: `openclaw config schema --json`
+    // ── Strategy 3: CLI introspection ─────────────────────────────────────────
     const cliSchema = await this.tryCliSchema(runtime);
     if (cliSchema) {
       return { schema: cliSchema, source: 'local-install', version: runtime.version };
     }
 
+    return null;
+  }
+
+  /**
+   * Generate a version-exact JSON schema by running the bundled
+   * scripts/generate-schema.mjs against the installed openclaw package's
+   * TypeScript type declarations.
+   *
+   * This is the "generate from open source code" approach that gives us a
+   * perfect schema for the exact installed version without any guesswork.
+   */
+  private async trySchemaGeneration(runtime: RuntimeInfo): Promise<Record<string, any> | null> {
+    const typesFile = path.join(
+      runtime.packageDir,
+      'dist', 'plugin-sdk', 'config', 'types.openclaw.d.ts',
+    );
+    if (!fs.existsSync(typesFile)) {
+      return null;
+    }
+
+    // Locate the bundled generate-schema.mjs script
+    const scriptPath = path.join(this.context.extensionPath, 'scripts', 'generate-schema.mjs');
+    if (!fs.existsSync(scriptPath)) {
+      return null;
+    }
+
+    // Check if ts-json-schema-generator is available (local node_modules or global)
+    const tsjsgBin = this.findTsJsonSchemaGeneratorBin(runtime.packageDir);
+
+    return new Promise((resolve) => {
+      const { spawn } = require('child_process') as typeof import('child_process');
+
+      // Write schema to a temp file to avoid stdout buffer limits
+      const tmpOut = path.join(this.cacheDir, `_gen_${runtime.version.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`);
+
+      const nodeArgs = ['--input-type=module', scriptPath, runtime.packageDir, '--out', tmpOut];
+
+      // Add ts-json-schema-generator bin path as env hint if found locally
+      const env = { ...process.env };
+      if (tsjsgBin) {
+        env['TSJSG_BIN'] = tsjsgBin;
+      }
+
+      const child = spawn(process.execPath, nodeArgs, {
+        timeout: 120_000,
+        env,
+      });
+
+      let stderr = '';
+      child.stderr?.on('data', (chunk: Buffer) => {
+        stderr += chunk.toString();
+      });
+
+      child.on('close', (code: number) => {
+        if (code !== 0) {
+          // Schema generation failed — this is non-fatal, we'll fall through to other methods
+          return resolve(null);
+        }
+        try {
+          const raw = fs.readFileSync(tmpOut, 'utf8');
+          const schema = JSON.parse(raw) as Record<string, any>;
+          // Clean up temp file
+          try { fs.unlinkSync(tmpOut); } catch { /* ignore */ }
+          if (this.looksLikeSchema(schema)) {
+            resolve(schema);
+          } else {
+            resolve(null);
+          }
+        } catch {
+          resolve(null);
+        }
+      });
+
+      child.on('error', () => resolve(null));
+    });
+  }
+
+  /**
+   * Find the ts-json-schema-generator binary.
+   * Checks the extension's node_modules, the openclaw package's node_modules,
+   * and falls back to null (npx will be used by the script).
+   */
+  private findTsJsonSchemaGeneratorBin(openclawPkgDir: string): string | null {
+    const candidates = [
+      path.join(this.context.extensionPath, 'node_modules', '.bin', 'ts-json-schema-generator'),
+      path.join(openclawPkgDir, 'node_modules', '.bin', 'ts-json-schema-generator'),
+      // Windows
+      path.join(this.context.extensionPath, 'node_modules', '.bin', 'ts-json-schema-generator.cmd'),
+      path.join(openclawPkgDir, 'node_modules', '.bin', 'ts-json-schema-generator.cmd'),
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) {
+        return c;
+      }
+    }
     return null;
   }
 

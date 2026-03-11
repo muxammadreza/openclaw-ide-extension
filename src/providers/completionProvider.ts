@@ -1,21 +1,33 @@
 import * as vscode from 'vscode';
 import { getJsonPath, parseConfig } from '../parser';
 
-/** Well-known model IDs for autocomplete suggestions. */
+/** Well-known model IDs for autocomplete suggestions.
+ * Source: openclaw npm package model catalog (updated for v2026.3.x).
+ */
 const KNOWN_MODELS = [
+  // Anthropic
   'anthropic/claude-opus-4-6',
   'anthropic/claude-sonnet-4-6',
-  'anthropic/claude-haiku-4-6',
+  // OpenAI
   'openai/gpt-5.4',
+  'openai/gpt-5.4-pro',
   'openai/gpt-5-mini',
-  'openai/o3',
-  'openai/o4-mini',
+  'openai/gpt-oss-120b',
+  // Google
   'google/gemini-3.1-pro-preview',
   'google/gemini-3-flash-preview',
   'google/gemini-3.1-flash-lite-preview',
+  // OpenRouter
   'openrouter/anthropic/claude-opus-4-6',
   'openrouter/openai/gpt-5.4',
   'openrouter/google/gemini-3.1-pro-preview',
+  // Short aliases supported by openclaw
+  'opus',
+  'sonnet',
+  'gpt',
+  'gpt-mini',
+  'gemini',
+  'gemini-flash',
 ];
 
 /** Completions for specific string-value fields. */
@@ -61,13 +73,14 @@ const VALUE_COMPLETIONS: Record<string, Array<{ label: string; detail?: string }
   'session.reset.mode': [
     { label: 'daily', detail: 'Reset sessions once per day at atHour (default)' },
     { label: 'idle', detail: 'Reset sessions after idleMinutes of inactivity' },
-    { label: 'manual', detail: 'Never auto-reset; only via /session reset' },
   ],
   'agents.defaults.thinkingDefault': [
     { label: 'off', detail: 'Disable extended reasoning' },
-    { label: 'low', detail: 'Minimal reasoning (fast, default)' },
+    { label: 'minimal', detail: 'Minimal reasoning (fastest)' },
+    { label: 'low', detail: 'Low reasoning (fast, default)' },
     { label: 'medium', detail: 'Moderate reasoning' },
     { label: 'high', detail: 'Deep reasoning (slower, more tokens)' },
+    { label: 'xhigh', detail: 'Extra-deep reasoning (slowest, most tokens)' },
     { label: 'adaptive', detail: 'Model chooses thinking depth' },
   ],
   'agents.defaults.bootstrapPromptTruncationWarning': [
@@ -83,10 +96,13 @@ const VALUE_COMPLETIONS: Record<string, Array<{ label: string; detail?: string }
   'agents.defaults.verboseDefault': [
     { label: 'off', detail: 'Concise output (default)' },
     { label: 'on', detail: 'Verbose output' },
+    { label: 'full', detail: 'Full verbose output including system prompt' },
   ],
   'agents.defaults.elevatedDefault': [
     { label: 'on', detail: 'Elevated tool access enabled by default' },
     { label: 'off', detail: 'Elevated tool access disabled by default' },
+    { label: 'ask', detail: 'Prompt user for confirmation before elevated access' },
+    { label: 'full', detail: 'Always elevated without confirmation' },
   ],
   'agents.defaults.compaction.mode': [
     { label: 'default', detail: 'Standard compaction (default)' },
@@ -106,10 +122,12 @@ const VALUE_COMPLETIONS: Record<string, Array<{ label: string; detail?: string }
     { label: '0.0.0.0', detail: 'All interfaces (needed for remote access)' },
   ],
   'logging.level': [
+    { label: 'trace', detail: 'Most verbose tracing output' },
     { label: 'debug', detail: 'Verbose debug output' },
     { label: 'info', detail: 'Standard info logging (default)' },
     { label: 'warn', detail: 'Warnings and errors only' },
     { label: 'error', detail: 'Errors only' },
+    { label: 'fatal', detail: 'Fatal errors only' },
     { label: 'silent', detail: 'No log output' },
   ],
   chatmode: [
