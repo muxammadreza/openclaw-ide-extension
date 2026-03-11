@@ -1,0 +1,1612 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openclaw.ai/schemas/openclaw.schema.json",
+  "title": "OpenClaw Configuration",
+  "description": "Configuration schema for ~/.openclaw/openclaw.json. Format is JSON5 (comments and trailing commas allowed). All fields are optional — OpenClaw uses safe defaults when omitted.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference (allowed at root for IDE metadata)."
+    },
+
+    "env": {
+      "type": "object",
+      "description": "Environment variables, shell imports, and secret references injected into the OpenClaw runtime.",
+      "additionalProperties": {
+        "type": ["string", "object"],
+        "description": "An environment variable value or a SecretRef object.",
+        "properties": {
+          "secretRef": { "type": "string", "description": "Reference to a secret by name." },
+          "default": { "type": "string", "description": "Default value if secret is not found." }
+        }
+      }
+    },
+
+    "identity": {
+      "type": "object",
+      "description": "Bot identity settings (name, theme, emoji).",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "description": "Display name for the bot.", "examples": ["OpenClaw"] },
+        "emoji": { "type": "string", "description": "Emoji used in status messages.", "examples": ["🤖"] },
+        "theme": {
+          "type": "string",
+          "description": "Color theme for UI elements.",
+          "enum": ["auto", "light", "dark"]
+        }
+      }
+    },
+
+    "logging": {
+      "type": "object",
+      "description": "Logging configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error", "silent"],
+          "description": "Log verbosity level. Default: 'info'.",
+          "default": "info"
+        },
+        "file": {
+          "type": "string",
+          "description": "Path to log file. Defaults to ~/.openclaw/logs/gateway.log."
+        },
+        "console": {
+          "type": ["boolean", "string"],
+          "description": "Console log style. true enables default console output.",
+          "enum": [true, false, "pretty", "json"]
+        },
+        "maxFiles": { "type": "integer", "description": "Max number of log files to retain.", "minimum": 1 },
+        "maxSize": { "type": "string", "description": "Max size per log file (e.g. '10mb')." }
+      }
+    },
+
+    "messages": {
+      "type": "object",
+      "description": "Global message formatting and history settings.",
+      "additionalProperties": false,
+      "properties": {
+        "prefix": {
+          "type": "string",
+          "description": "Prefix prepended to all outgoing messages."
+        },
+        "format": {
+          "type": "string",
+          "description": "Default response format.",
+          "enum": ["markdown", "plain", "auto"],
+          "default": "auto"
+        },
+        "reactions": {
+          "type": "boolean",
+          "description": "Enable/disable reaction-based feedback on messages.",
+          "default": true
+        },
+        "groupChat": {
+          "type": "object",
+          "description": "Group chat message settings.",
+          "additionalProperties": false,
+          "properties": {
+            "historyLimit": {
+              "type": "integer",
+              "description": "Max messages to include from group chat history. Set 0 to disable.",
+              "minimum": 0,
+              "default": 50
+            }
+          }
+        }
+      }
+    },
+
+    "routing": {
+      "type": "object",
+      "description": "Message routing configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "queueMode": {
+          "type": "string",
+          "enum": ["fifo", "lifo", "discard"],
+          "description": "How to handle queued messages when the agent is busy."
+        }
+      }
+    },
+
+    "commands": {
+      "type": "object",
+      "description": "Chat command handling configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "native": {
+          "type": ["string", "boolean"],
+          "enum": ["auto", true, false],
+          "description": "Register native bot commands when the platform supports it. 'auto' enables for Discord and Telegram.",
+          "default": "auto"
+        },
+        "text": {
+          "type": "boolean",
+          "description": "Parse /commands in chat messages.",
+          "default": true
+        },
+        "bash": {
+          "type": "boolean",
+          "description": "Allow ! (shell command alias) — requires tools.elevated.enabled.",
+          "default": false
+        },
+        "bashForegroundMs": {
+          "type": "integer",
+          "description": "Milliseconds to show bash output inline before backgrounding.",
+          "default": 2000
+        },
+        "config": {
+          "type": "boolean",
+          "description": "Allow /config command (reads/writes openclaw.json).",
+          "default": false
+        },
+        "debug": {
+          "type": "boolean",
+          "description": "Allow /debug command.",
+          "default": false
+        },
+        "restart": {
+          "type": "boolean",
+          "description": "Allow /restart command and gateway restart tool.",
+          "default": false
+        },
+        "allowFrom": {
+          "type": "object",
+          "description": "Per-provider allowed senders for commands. When set, it is the only authorization source.",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "useAccessGroups": {
+          "type": "boolean",
+          "description": "Allow commands to bypass access-group policies (when allowFrom is not set).",
+          "default": true
+        }
+      }
+    },
+
+    "tools": {
+      "type": "object",
+      "description": "Tool access configuration (browser, exec, read, write, media, canvas, skills).",
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "type": "array",
+          "description": "Explicitly allowed tool categories.",
+          "items": {
+            "type": "string",
+            "enum": ["exec", "process", "read", "write", "browser", "canvas", "media", "skills", "network"]
+          }
+        },
+        "deny": {
+          "type": "array",
+          "description": "Explicitly denied tool categories.",
+          "items": { "type": "string" }
+        },
+        "media": {
+          "type": "object",
+          "description": "Media tool configuration.",
+          "additionalProperties": false,
+          "properties": {
+            "audio": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean", "default": true },
+                "maxBytes": { "type": "integer", "description": "Max audio file size in bytes.", "default": 20971520 }
+              }
+            },
+            "video": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean", "default": true },
+                "maxBytes": { "type": "integer", "description": "Max video file size in bytes.", "default": 52428800 }
+              }
+            }
+          }
+        },
+        "elevated": {
+          "type": "object",
+          "description": "Elevated (privileged) tool access settings.",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "allowFrom": {
+              "type": "object",
+              "description": "Per-channel allowed senders for elevated tools.",
+              "additionalProperties": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "session": {
+      "type": "object",
+      "description": "Session scope, reset, and maintenance settings.",
+      "additionalProperties": false,
+      "properties": {
+        "dmScope": {
+          "type": "string",
+          "enum": ["main", "per-peer", "per-channel-peer", "per-account-channel-peer"],
+          "description": "Session isolation scope for DMs.",
+          "default": "per-channel-peer"
+        },
+        "threadBindings": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "idleHours": { "type": "number", "description": "Inactivity hours before auto-unfocus.", "default": 24 }
+          }
+        },
+        "reset": {
+          "type": "object",
+          "description": "Session reset configuration.",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["daily", "idle", "manual"],
+              "description": "How sessions are reset.",
+              "default": "daily"
+            },
+            "atHour": {
+              "type": "integer",
+              "description": "Hour of day (0-23) for daily reset.",
+              "minimum": 0,
+              "maximum": 23,
+              "default": 4
+            },
+            "idleMinutes": {
+              "type": "integer",
+              "description": "Minutes of inactivity before idle reset.",
+              "minimum": 1,
+              "default": 120
+            }
+          }
+        },
+        "typingIntervalSeconds": {
+          "type": "number",
+          "description": "Interval in seconds for typing indicators.",
+          "default": 5
+        },
+        "maintenance": {
+          "type": "object",
+          "description": "Session history maintenance settings.",
+          "additionalProperties": false,
+          "properties": {
+            "pruneAfter": {
+              "type": "string",
+              "description": "Duration string (e.g. '30d') after which inactive sessions are pruned.",
+              "default": "30d"
+            },
+            "maxEntries": {
+              "type": "integer",
+              "description": "Max session history entries per session.",
+              "default": 500
+            },
+            "maxDiskBytes": {
+              "type": ["string", "integer"],
+              "description": "Max disk space for session history (e.g. '500mb' or bytes).",
+              "default": "500mb"
+            }
+          }
+        }
+      }
+    },
+
+    "channels": {
+      "type": "object",
+      "description": "Channel integrations. Each channel starts automatically when its config section exists (unless enabled: false).",
+      "additionalProperties": false,
+      "properties": {
+        "defaults": {
+          "type": "object",
+          "description": "Default settings applied to all channels.",
+          "additionalProperties": false,
+          "properties": {
+            "groupPolicy": {
+              "type": "string",
+              "enum": ["allowlist", "open", "disabled"],
+              "description": "Default group policy for channels that don't specify one.",
+              "default": "allowlist"
+            },
+            "heartbeat": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "showOk": { "type": "boolean", "default": false, "description": "Include healthy channel statuses in heartbeat output." },
+                "showAlerts": { "type": "boolean", "default": true, "description": "Include degraded/error statuses in heartbeat output." },
+                "useIndicator": { "type": "boolean", "default": true, "description": "Render compact indicator-style heartbeat output." }
+              }
+            }
+          }
+        },
+        "modelByChannel": {
+          "type": "object",
+          "description": "Pin specific channel IDs to a model. Values accept 'provider/model' or configured model aliases.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "whatsapp": {
+          "$ref": "#/definitions/whatsappChannel"
+        },
+        "telegram": {
+          "$ref": "#/definitions/telegramChannel"
+        },
+        "discord": {
+          "$ref": "#/definitions/discordChannel"
+        },
+        "slack": {
+          "$ref": "#/definitions/slackChannel"
+        },
+        "signal": {
+          "$ref": "#/definitions/signalChannel"
+        },
+        "googlechat": {
+          "$ref": "#/definitions/googlechatChannel"
+        },
+        "mattermost": {
+          "$ref": "#/definitions/mattermostChannel"
+        },
+        "imessage": {
+          "$ref": "#/definitions/imessageChannel"
+        },
+        "bluebubbles": {
+          "$ref": "#/definitions/bluebubblesChannel"
+        },
+        "msteams": {
+          "$ref": "#/definitions/msteamsChannel"
+        },
+        "irc": {
+          "$ref": "#/definitions/ircChannel"
+        },
+        "matrix": {
+          "type": "object",
+          "description": "Matrix channel configuration.",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "homeserverUrl": { "type": "string", "description": "Matrix homeserver URL." },
+            "accessToken": { "type": "string", "description": "Matrix bot access token." },
+            "dmPolicy": { "$ref": "#/definitions/dmPolicy" },
+            "allowFrom": { "$ref": "#/definitions/allowFrom" }
+          }
+        }
+      }
+    },
+
+    "web": {
+      "type": "object",
+      "description": "Web/WebSocket channel configuration (used by WhatsApp/Baileys).",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "heartbeatSeconds": { "type": "integer", "default": 60 },
+        "reconnect": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "initialMs": { "type": "integer", "default": 2000 },
+            "maxMs": { "type": "integer", "default": 120000 },
+            "factor": { "type": "number", "default": 1.4 },
+            "jitter": { "type": "number", "default": 0.2 },
+            "maxAttempts": { "type": "integer", "description": "0 = unlimited.", "default": 0 }
+          }
+        }
+      }
+    },
+
+    "agents": {
+      "type": "object",
+      "description": "Agent configuration (default settings, model routing, multi-agent).",
+      "additionalProperties": false,
+      "properties": {
+        "defaults": {
+          "type": "object",
+          "description": "Default settings applied to all agents.",
+          "additionalProperties": false,
+          "properties": {
+            "workspace": {
+              "type": "string",
+              "description": "Default workspace directory path.",
+              "default": "~/.openclaw/workspace"
+            },
+            "repoRoot": {
+              "type": "string",
+              "description": "Optional repository root shown in system prompt. Auto-detected if unset."
+            },
+            "skipBootstrap": {
+              "type": "boolean",
+              "description": "Disable automatic creation of workspace bootstrap files.",
+              "default": false
+            },
+            "bootstrapMaxChars": {
+              "type": "integer",
+              "description": "Max characters per workspace bootstrap file before truncation.",
+              "default": 20000
+            },
+            "bootstrapTotalMaxChars": {
+              "type": "integer",
+              "description": "Max total characters injected across all workspace bootstrap files.",
+              "default": 150000
+            },
+            "bootstrapPromptTruncationWarning": {
+              "type": "string",
+              "enum": ["off", "once", "always"],
+              "description": "Controls agent-visible warning when bootstrap context is truncated.",
+              "default": "once"
+            },
+            "imageMaxDimensionPx": {
+              "type": "integer",
+              "description": "Max pixel size for the longest image dimension before provider calls.",
+              "default": 1200
+            },
+            "userTimezone": {
+              "type": "string",
+              "description": "Timezone for system prompt context (e.g. 'America/New_York'). Falls back to host timezone."
+            },
+            "timeFormat": {
+              "type": "string",
+              "enum": ["auto", "12", "24"],
+              "description": "Time format in system prompt.",
+              "default": "auto"
+            },
+            "timeoutSeconds": {
+              "type": "integer",
+              "description": "Agent run timeout in seconds.",
+              "default": 600
+            },
+            "mediaMaxMb": {
+              "type": "number",
+              "description": "Default maximum media file size in MB.",
+              "default": 5
+            },
+            "contextTokens": {
+              "type": "integer",
+              "description": "Max context tokens per agent run.",
+              "default": 200000
+            },
+            "maxConcurrent": {
+              "type": "integer",
+              "description": "Max parallel agent runs across sessions.",
+              "default": 1
+            },
+            "thinkingDefault": {
+              "type": "string",
+              "enum": ["off", "low", "medium", "high", "adaptive"],
+              "description": "Default thinking mode for supported models.",
+              "default": "low"
+            },
+            "verboseDefault": {
+              "type": "string",
+              "enum": ["off", "on"],
+              "description": "Default verbose output mode.",
+              "default": "off"
+            },
+            "elevatedDefault": {
+              "type": "string",
+              "enum": ["off", "on"],
+              "description": "Default elevated tool access mode.",
+              "default": "on"
+            },
+            "model": {
+              "$ref": "#/definitions/modelConfig",
+              "description": "Default model configuration."
+            },
+            "imageModel": {
+              "$ref": "#/definitions/modelConfig",
+              "description": "Model for image/vision tasks."
+            },
+            "pdfModel": {
+              "$ref": "#/definitions/modelConfig",
+              "description": "Model for PDF processing tasks."
+            },
+            "pdfMaxBytesMb": {
+              "type": "number",
+              "description": "Default PDF size limit in MB.",
+              "default": 10
+            },
+            "pdfMaxPages": {
+              "type": "integer",
+              "description": "Max PDF pages for extraction fallback.",
+              "default": 20
+            },
+            "models": {
+              "type": "object",
+              "description": "Model catalog and allowlist for /model command. Keys are 'provider/model'. Each entry can include alias and params.",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "alias": { "type": "string", "description": "Shortcut alias for this model." },
+                  "params": {
+                    "type": "object",
+                    "description": "Provider-specific params (temperature, maxTokens, cacheRetention, etc.).",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            },
+            "heartbeat": { "$ref": "#/definitions/heartbeatConfig" },
+            "compaction": { "$ref": "#/definitions/compactionConfig" },
+            "contextPruning": { "$ref": "#/definitions/contextPruningConfig" },
+            "sandbox": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": ["none", "non-main", "all"],
+                  "description": "Sandbox mode for tool execution."
+                },
+                "scope": {
+                  "type": "string",
+                  "enum": ["agent", "session", "global"],
+                  "description": "Scope of sandbox isolation."
+                }
+              }
+            },
+            "cliBackends": {
+              "type": "object",
+              "description": "Optional CLI backends for text-only fallback runs.",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "command": { "type": "string", "description": "Path or command name to invoke." },
+                  "args": { "type": "array", "items": { "type": "string" } },
+                  "output": { "type": "string", "enum": ["json", "text"] },
+                  "modelArg": { "type": "string" },
+                  "sessionArg": { "type": "string" },
+                  "sessionMode": { "type": "string", "enum": ["new", "existing"] },
+                  "systemPromptArg": { "type": "string" },
+                  "systemPromptWhen": { "type": "string", "enum": ["first", "always"] },
+                  "imageArg": { "type": "string" },
+                  "imageMode": { "type": "string", "enum": ["repeat", "concat"] }
+                }
+              }
+            },
+            "blockStreamingDefault": {
+              "type": "string",
+              "enum": ["on", "off"],
+              "description": "Default block streaming mode.",
+              "default": "off"
+            },
+            "blockStreamingBreak": {
+              "type": "string",
+              "enum": ["text_end", "message_end"],
+              "description": "When to break block stream chunks."
+            },
+            "blockStreamingChunk": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "minChars": { "type": "integer", "default": 800 },
+                "maxChars": { "type": "integer", "default": 1200 }
+              }
+            },
+            "blockStreamingCoalesce": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "idleMs": { "type": "integer", "description": "Idle ms before flushing coalesced block stream.", "default": 1000 }
+              }
+            },
+            "humanDelay": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "mode": { "type": "string", "enum": ["off", "natural", "custom"] },
+                "minMs": { "type": "integer" },
+                "maxMs": { "type": "integer" }
+              }
+            }
+          }
+        },
+        "list": {
+          "type": "array",
+          "description": "Named agent definitions. Overrides agent defaults per agent ID.",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": { "type": "string", "description": "Unique agent identifier." },
+              "name": { "type": "string", "description": "Display name for this agent." },
+              "workspace": { "type": "string" },
+              "model": { "$ref": "#/definitions/modelConfig" },
+              "systemPrompt": { "type": "string" },
+              "skills": { "type": "array", "items": { "type": "string" } },
+              "heartbeat": { "$ref": "#/definitions/heartbeatConfig" },
+              "groupChat": {
+                "type": "object",
+                "properties": {
+                  "mentionPatterns": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Regex patterns for mention gating in group chats."
+                  }
+                }
+              },
+              "timeoutSeconds": { "type": "integer" },
+              "maxConcurrent": { "type": "integer" },
+              "params": { "type": "object", "additionalProperties": true }
+            }
+          }
+        }
+      }
+    },
+
+    "models": {
+      "type": "object",
+      "description": "Top-level model provider configuration and API keys.",
+      "additionalProperties": false,
+      "properties": {
+        "openai": {
+          "type": "object",
+          "description": "OpenAI provider configuration.",
+          "additionalProperties": false,
+          "properties": {
+            "apiKey": { "type": "string", "description": "OpenAI API key (prefer OPENAI_API_KEY env var)." },
+            "baseUrl": { "type": "string", "description": "Custom OpenAI-compatible endpoint URL." },
+            "organization": { "type": "string" }
+          }
+        },
+        "anthropic": {
+          "type": "object",
+          "description": "Anthropic provider configuration.",
+          "additionalProperties": false,
+          "properties": {
+            "apiKey": { "type": "string", "description": "Anthropic API key (prefer ANTHROPIC_API_KEY env var)." },
+            "baseUrl": { "type": "string" }
+          }
+        },
+        "google": {
+          "type": "object",
+          "description": "Google AI provider configuration.",
+          "additionalProperties": false,
+          "properties": {
+            "apiKey": { "type": "string", "description": "Google AI API key." },
+            "project": { "type": "string" }
+          }
+        },
+        "openrouter": {
+          "type": "object",
+          "description": "OpenRouter provider configuration.",
+          "additionalProperties": false,
+          "properties": {
+            "apiKey": { "type": "string", "description": "OpenRouter API key." }
+          }
+        }
+      }
+    },
+
+    "gateway": {
+      "type": "object",
+      "description": "Gateway server configuration (port, auth, TLS, UI).",
+      "additionalProperties": false,
+      "properties": {
+        "port": {
+          "type": "integer",
+          "description": "Gateway HTTP/WebSocket port.",
+          "default": 18789,
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "host": {
+          "type": "string",
+          "description": "Gateway bind host.",
+          "default": "127.0.0.1"
+        },
+        "auth": {
+          "type": "object",
+          "description": "Gateway authentication settings.",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "tokens": {
+              "type": "array",
+              "description": "Static auth tokens for gateway API access.",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "tls": {
+          "type": "object",
+          "description": "TLS/HTTPS settings for the gateway.",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "cert": { "type": "string", "description": "Path to TLS certificate file." },
+            "key": { "type": "string", "description": "Path to TLS private key file." }
+          }
+        },
+        "tailscale": {
+          "type": "object",
+          "description": "Tailscale VPN settings for gateway exposure.",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "hostname": { "type": "string" },
+            "authKey": { "type": "string" }
+          }
+        },
+        "ui": {
+          "type": "object",
+          "description": "Gateway UI settings.",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "path": { "type": "string", "description": "URL path for the UI.", "default": "/" }
+          }
+        },
+        "cors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "origins": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Allowed CORS origins."
+            }
+          }
+        }
+      }
+    },
+
+    "skills": {
+      "type": "object",
+      "description": "Skills configuration (skill directories, bundled skills, per-skill settings).",
+      "additionalProperties": false,
+      "properties": {
+        "dirs": {
+          "type": "array",
+          "description": "Directories to scan for skills.",
+          "items": { "type": "string" }
+        },
+        "bundled": {
+          "type": "object",
+          "description": "Enable/disable bundled skill packs.",
+          "additionalProperties": { "type": "boolean" }
+        },
+        "config": {
+          "type": "object",
+          "description": "Per-skill configuration. Keys are skill names.",
+          "additionalProperties": { "type": "object" }
+        }
+      }
+    },
+
+    "browser": {
+      "type": "object",
+      "description": "Browser automation configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "executable": { "type": "string", "description": "Path to browser executable." },
+        "headless": { "type": "boolean", "default": true },
+        "timeout": { "type": "integer", "description": "Navigation timeout in ms.", "default": 30000 },
+        "viewport": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "width": { "type": "integer", "default": 1280 },
+            "height": { "type": "integer", "default": 720 }
+          }
+        },
+        "userAgent": { "type": "string" },
+        "proxy": { "type": "string", "description": "Proxy URL (e.g. 'socks5://localhost:9050')." }
+      }
+    },
+
+    "auth": {
+      "type": "object",
+      "description": "OAuth profiles and API key management.",
+      "additionalProperties": false,
+      "properties": {
+        "profiles": {
+          "type": "object",
+          "description": "Named OAuth/API key profiles.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["oauth", "apikey"] },
+              "clientId": { "type": "string" },
+              "clientSecret": { "type": "string" },
+              "scopes": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+
+    "cron": {
+      "type": "array",
+      "description": "Scheduled job configuration.",
+      "items": {
+        "type": "object",
+        "required": ["schedule"],
+        "properties": {
+          "id": { "type": "string", "description": "Unique job identifier." },
+          "schedule": { "type": "string", "description": "Cron expression (e.g. '0 9 * * 1-5')." },
+          "prompt": { "type": "string", "description": "Message to send to the agent." },
+          "to": { "type": "string", "description": "Delivery target (channel:id or phone number)." },
+          "agent": { "type": "string", "description": "Agent ID to run." },
+          "model": { "$ref": "#/definitions/modelConfig" },
+          "enabled": { "type": "boolean", "default": true },
+          "timezone": { "type": "string" }
+        }
+      }
+    },
+
+    "hooks": {
+      "type": "object",
+      "description": "Webhook and integration hooks.",
+      "additionalProperties": false,
+      "properties": {
+        "webhooks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "path": { "type": "string" },
+              "secret": { "type": "string" },
+              "events": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "gmail": {
+          "type": "object",
+          "description": "Gmail integration hook.",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "pollIntervalMinutes": { "type": "integer" },
+            "filters": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+
+    "operator": {
+      "type": "object",
+      "description": "Operator/admin access configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "admin": {
+          "type": "array",
+          "description": "Users/channels with admin (operator) access.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "bindings": {
+      "type": "array",
+      "description": "Top-level ACP and persistent routing bindings.",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": { "type": "string", "enum": ["acp", "route"] },
+          "match": {
+            "type": "object",
+            "properties": {
+              "peer": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" }
+                }
+              },
+              "channel": { "type": "string" },
+              "accountId": { "type": "string" }
+            }
+          },
+          "agent": { "type": "string" },
+          "skills": { "type": "array", "items": { "type": "string" } },
+          "systemPrompt": { "type": "string" },
+          "model": { "$ref": "#/definitions/modelConfig" }
+        }
+      }
+    }
+  },
+
+  "definitions": {
+    "dmPolicy": {
+      "type": "string",
+      "enum": ["pairing", "allowlist", "open", "disabled"],
+      "description": "DM access policy. 'pairing': one-time code approval. 'allowlist': only allowFrom. 'open': allow all. 'disabled': ignore all.",
+      "default": "pairing"
+    },
+    "groupPolicy": {
+      "type": "string",
+      "enum": ["allowlist", "open", "disabled"],
+      "description": "Group/channel access policy. 'allowlist': only configured groups. 'open': bypass allowlists. 'disabled': block all.",
+      "default": "allowlist"
+    },
+    "allowFrom": {
+      "type": "array",
+      "description": "List of allowed senders. Phone numbers (e.g. '+15555550123'), user IDs, or '*' for all.",
+      "items": { "type": "string" }
+    },
+    "modelConfig": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Model identifier in 'provider/model' format (e.g. 'anthropic/claude-sonnet-4-5').",
+          "examples": [
+            "anthropic/claude-opus-4-6",
+            "anthropic/claude-sonnet-4-6",
+            "openai/gpt-5.4",
+            "openai/gpt-5-mini",
+            "google/gemini-3.1-pro-preview",
+            "google/gemini-3-flash-preview"
+          ]
+        },
+        {
+          "type": "object",
+          "description": "Model configuration with primary and fallback models.",
+          "additionalProperties": false,
+          "properties": {
+            "primary": {
+              "type": "string",
+              "description": "Primary model in 'provider/model' format.",
+              "examples": ["anthropic/claude-sonnet-4-6", "openai/gpt-5.4"]
+            },
+            "fallbacks": {
+              "type": "array",
+              "description": "Ordered fallback models if primary fails.",
+              "items": { "type": "string" }
+            }
+          },
+          "required": ["primary"]
+        }
+      ]
+    },
+    "retryConfig": {
+      "type": "object",
+      "description": "Retry policy for channel connections.",
+      "additionalProperties": false,
+      "properties": {
+        "attempts": { "type": "integer", "description": "Max retry attempts.", "default": 3 },
+        "minDelayMs": { "type": "integer", "description": "Minimum retry delay in ms.", "default": 400 },
+        "maxDelayMs": { "type": "integer", "description": "Maximum retry delay in ms.", "default": 30000 },
+        "jitter": { "type": "number", "description": "Jitter factor (0-1) for randomized delays.", "minimum": 0, "maximum": 1, "default": 0.1 }
+      }
+    },
+    "heartbeatConfig": {
+      "type": "object",
+      "description": "Periodic heartbeat run configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "every": {
+          "type": "string",
+          "description": "Interval duration (e.g. '30m', '1h'). '0m' disables.",
+          "default": "30m"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model to use for heartbeat runs."
+        },
+        "includeReasoning": { "type": "boolean", "default": false },
+        "lightContext": { "type": "boolean", "default": false, "description": "Only inject HEARTBEAT.md from bootstrap files." },
+        "session": { "type": "string", "description": "Session ID to use for heartbeat runs.", "default": "main" },
+        "to": { "type": "string", "description": "Delivery target for heartbeat output." },
+        "directPolicy": {
+          "type": "string",
+          "enum": ["allow", "block"],
+          "default": "allow",
+          "description": "Direct/DM delivery policy for heartbeat."
+        },
+        "target": {
+          "type": "string",
+          "description": "Default delivery target. 'none' means no delivery, 'last' means last active channel.",
+          "default": "none"
+        },
+        "prompt": { "type": "string", "description": "Custom prompt for heartbeat runs." },
+        "ackMaxChars": { "type": "integer", "default": 300, "description": "Max characters for heartbeat acknowledgment." },
+        "suppressToolErrorWarnings": { "type": "boolean", "default": false }
+      }
+    },
+    "compactionConfig": {
+      "type": "object",
+      "description": "Session history compaction configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["default", "safeguard"],
+          "description": "'safeguard' uses chunked summarization for long histories.",
+          "default": "default"
+        },
+        "reserveTokensFloor": {
+          "type": "integer",
+          "description": "Minimum tokens to reserve for new content during compaction.",
+          "default": 24000
+        },
+        "identifierPolicy": {
+          "type": "string",
+          "enum": ["strict", "off", "custom"],
+          "description": "How to preserve opaque identifiers during compaction summarization.",
+          "default": "strict"
+        },
+        "identifierInstructions": {
+          "type": "string",
+          "description": "Custom identifier-preservation text when identifierPolicy='custom'."
+        },
+        "postCompactionSections": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "AGENTS.md section names to re-inject after compaction."
+        },
+        "model": {
+          "type": "string",
+          "description": "Optional model override for compaction summarization only."
+        },
+        "memoryFlush": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "softThresholdTokens": { "type": "integer", "default": 6000 },
+            "systemPrompt": { "type": "string" },
+            "prompt": { "type": "string" }
+          }
+        }
+      }
+    },
+    "contextPruningConfig": {
+      "type": "object",
+      "description": "Context pruning configuration (prunes old tool results in-memory).",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["off", "cache-ttl"],
+          "description": "Pruning mode. 'cache-ttl' enables time-based pruning.",
+          "default": "off"
+        },
+        "ttl": { "type": "string", "description": "Cache TTL duration (e.g. '1h', '30m').", "default": "1h" },
+        "keepLastAssistants": { "type": "integer", "default": 3 },
+        "softTrimRatio": { "type": "number", "default": 0.3 },
+        "hardClearRatio": { "type": "number", "default": 0.5 },
+        "minPrunableToolChars": { "type": "integer", "default": 50000 },
+        "softTrim": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxChars": { "type": "integer", "default": 4000 },
+            "headChars": { "type": "integer", "default": 1500 },
+            "tailChars": { "type": "integer", "default": 1500 }
+          }
+        },
+        "hardClear": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "placeholder": { "type": "string", "default": "[Old tool result content cleared]" }
+          }
+        },
+        "tools": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "deny": { "type": "array", "items": { "type": "string" }, "description": "Tool names to exclude from pruning." }
+          }
+        }
+      }
+    },
+    "groupConfig": {
+      "type": "object",
+      "properties": {
+        "requireMention": {
+          "type": "boolean",
+          "description": "Require @mention before the bot responds in this group.",
+          "default": true
+        },
+        "allowFrom": { "$ref": "#/definitions/allowFrom" },
+        "skills": { "type": "array", "items": { "type": "string" }, "description": "Skills enabled for this group." },
+        "systemPrompt": { "type": "string", "description": "Custom system prompt for this group." }
+      }
+    },
+    "streamingMode": {
+      "type": "string",
+      "enum": ["off", "partial", "block", "progress"],
+      "description": "Streaming response mode. 'off': wait for full reply. 'partial': live-edit message. 'block': send chunks. 'progress': send progress updates.",
+      "default": "off"
+    },
+    "whatsappChannel": {
+      "type": "object",
+      "description": "WhatsApp channel configuration (uses Baileys Web).",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "dmPolicy": { "$ref": "#/definitions/dmPolicy" },
+        "allowFrom": { "$ref": "#/definitions/allowFrom" },
+        "textChunkLimit": { "type": "integer", "description": "Max characters per message chunk.", "default": 4000 },
+        "chunkMode": { "type": "string", "enum": ["length", "newline"], "default": "length" },
+        "mediaMaxMb": { "type": "number", "description": "Max media file size in MB.", "default": 50 },
+        "sendReadReceipts": { "type": "boolean", "description": "Send blue tick read receipts.", "default": true },
+        "groupPolicy": { "$ref": "#/definitions/groupPolicy" },
+        "groupAllowFrom": { "$ref": "#/definitions/allowFrom" },
+        "groups": {
+          "type": "object",
+          "description": "Per-group configuration. Use '*' for default.",
+          "additionalProperties": { "$ref": "#/definitions/groupConfig" }
+        },
+        "accounts": {
+          "type": "object",
+          "description": "Multi-account WhatsApp configuration.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "dmPolicy": { "$ref": "#/definitions/dmPolicy" },
+              "allowFrom": { "$ref": "#/definitions/allowFrom" },
+              "sendReadReceipts": { "type": "boolean" }
+            }
+          }
+        },
+        "defaultAccount": { "type": "string", "description": "Default account ID for outbound messages." }
+      }
+    },
+    "telegramChannel": {
+      "type": "object",
+      "description": "Telegram bot channel configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "botToken": { "type": "string", "description": "Telegram bot token from @BotFather. Prefer TELEGRAM_BOT_TOKEN env var." },
+        "tokenFile": { "type": "string", "description": "Path to file containing the bot token (regular files only; symlinks rejected)." },
+        "dmPolicy": { "$ref": "#/definitions/dmPolicy" },
+        "allowFrom": { "$ref": "#/definitions/allowFrom" },
+        "groupPolicy": { "$ref": "#/definitions/groupPolicy" },
+        "groups": {
+          "type": "object",
+          "description": "Per-group/topic configuration. Use '*' for all groups.",
+          "additionalProperties": {
+            "allOf": [
+              { "$ref": "#/definitions/groupConfig" },
+              {
+                "type": "object",
+                "properties": {
+                  "topics": {
+                    "type": "object",
+                    "description": "Forum topic configuration. Keys are topic IDs.",
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "requireMention": { "type": "boolean" },
+                        "skills": { "type": "array", "items": { "type": "string" } },
+                        "systemPrompt": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "customCommands": {
+          "type": "array",
+          "description": "Custom Telegram bot menu command entries.",
+          "items": {
+            "type": "object",
+            "required": ["command", "description"],
+            "properties": {
+              "command": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "historyLimit": { "type": "integer", "description": "Max messages to include from history.", "default": 50 },
+        "replyToMode": { "type": "string", "enum": ["off", "first", "all"], "default": "first" },
+        "linkPreview": { "type": "boolean", "default": true },
+        "streaming": { "$ref": "#/definitions/streamingMode" },
+        "actions": {
+          "type": "object",
+          "properties": {
+            "reactions": { "type": "boolean", "default": true },
+            "sendMessage": { "type": "boolean", "default": true }
+          }
+        },
+        "reactionNotifications": { "type": "string", "enum": ["off", "own", "all"], "default": "own" },
+        "mediaMaxMb": { "type": "number", "default": 100 },
+        "retry": { "$ref": "#/definitions/retryConfig" },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "autoSelectFamily": { "type": "boolean", "default": true },
+            "dnsResultOrder": { "type": "string", "enum": ["ipv4first", "ipv6first", "verbatim"] }
+          }
+        },
+        "proxy": { "type": "string", "description": "Proxy URL (e.g. 'socks5://localhost:9050')." },
+        "webhookUrl": { "type": "string", "description": "HTTPS webhook URL for Telegram updates." },
+        "webhookSecret": { "type": "string" },
+        "webhookPath": { "type": "string" },
+        "configWrites": { "type": "boolean", "description": "Allow Telegram-initiated config writes.", "default": true },
+        "defaultAccount": { "type": "string" },
+        "accounts": {
+          "type": "object",
+          "description": "Multi-account Telegram configuration.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "botToken": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "discordChannel": {
+      "type": "object",
+      "description": "Discord bot channel configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "token": { "type": "string", "description": "Discord bot token. Prefer DISCORD_BOT_TOKEN env var." },
+        "mediaMaxMb": { "type": "number", "description": "Max media file size in MB.", "default": 8 },
+        "allowBots": {
+          "type": ["boolean", "string"],
+          "description": "Process messages from other bots. 'mentions' only accepts bot messages that @-mention the bot.",
+          "enum": [true, false, "mentions"],
+          "default": false
+        },
+        "actions": {
+          "type": "object",
+          "properties": {
+            "reactions": { "type": "boolean", "default": true },
+            "stickers": { "type": "boolean" },
+            "polls": { "type": "boolean" },
+            "permissions": { "type": "boolean" },
+            "messages": { "type": "boolean", "default": true },
+            "threads": { "type": "boolean", "default": true },
+            "pins": { "type": "boolean", "default": true },
+            "search": { "type": "boolean", "default": true },
+            "memberInfo": { "type": "boolean", "default": true },
+            "roleInfo": { "type": "boolean", "default": true },
+            "roles": { "type": "boolean", "default": false },
+            "channelInfo": { "type": "boolean", "default": true },
+            "voiceStatus": { "type": "boolean", "default": true },
+            "events": { "type": "boolean", "default": true },
+            "moderation": { "type": "boolean", "default": false }
+          }
+        },
+        "replyToMode": { "type": "string", "enum": ["off", "first", "all"], "default": "off" },
+        "dmPolicy": { "$ref": "#/definitions/dmPolicy" },
+        "allowFrom": { "$ref": "#/definitions/allowFrom" },
+        "dm": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "groupEnabled": { "type": "boolean", "default": false },
+            "groupChannels": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "guilds": {
+          "type": "object",
+          "description": "Per-guild configuration. Keys are guild IDs.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "slug": { "type": "string", "description": "Human-readable guild slug (auto-generated from name)." },
+              "requireMention": { "type": "boolean" },
+              "ignoreOtherMentions": { "type": "boolean" },
+              "reactionNotifications": { "type": "string", "enum": ["off", "own", "all", "allowlist"] },
+              "users": { "type": "array", "items": { "type": "string" } },
+              "channels": {
+                "type": "object",
+                "description": "Per-channel configuration. Keys are channel slugs or IDs.",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "allow": { "type": "boolean" },
+                    "requireMention": { "type": "boolean" },
+                    "users": { "type": "array", "items": { "type": "string" } },
+                    "skills": { "type": "array", "items": { "type": "string" } },
+                    "systemPrompt": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "historyLimit": { "type": "integer", "default": 20 },
+        "textChunkLimit": { "type": "integer", "default": 2000 },
+        "chunkMode": { "type": "string", "enum": ["length", "newline"], "default": "length" },
+        "streaming": { "$ref": "#/definitions/streamingMode" },
+        "maxLinesPerMessage": { "type": "integer", "default": 17 },
+        "threadBindings": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "idleHours": { "type": "number", "default": 24 },
+            "maxAgeHours": { "type": "number", "default": 0 },
+            "spawnSubagentSessions": { "type": "boolean", "default": false }
+          }
+        },
+        "voice": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "autoJoin": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "guildId": { "type": "string" },
+                  "channelId": { "type": "string" }
+                }
+              }
+            },
+            "daveEncryption": { "type": "boolean", "default": true },
+            "decryptionFailureTolerance": { "type": "integer", "default": 24 },
+            "tts": {
+              "type": "object",
+              "properties": {
+                "provider": { "type": "string", "enum": ["openai", "elevenlabs", "azure"] },
+                "openai": {
+                  "type": "object",
+                  "properties": {
+                    "voice": {
+                      "type": "string",
+                      "enum": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
+                      "default": "alloy"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "retry": { "$ref": "#/definitions/retryConfig" },
+        "defaultAccount": { "type": "string" }
+      }
+    },
+    "slackChannel": {
+      "type": "object",
+      "description": "Slack channel configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "botToken": { "type": "string", "description": "Slack bot token (xoxb-...). Prefer SLACK_BOT_TOKEN env var." },
+        "appToken": { "type": "string", "description": "Slack app token for Socket Mode (xapp-...). Prefer SLACK_APP_TOKEN env var." },
+        "signingSecret": { "type": "string", "description": "Slack signing secret for HTTP mode." },
+        "dmPolicy": { "$ref": "#/definitions/dmPolicy" },
+        "allowFrom": { "$ref": "#/definitions/allowFrom" },
+        "dm": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "groupEnabled": { "type": "boolean", "default": false },
+            "groupChannels": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "channels": {
+          "type": "object",
+          "description": "Per-channel configuration. Keys are channel IDs (C123) or names (#general).",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "allow": { "type": "boolean" },
+              "requireMention": { "type": "boolean" },
+              "allowBots": { "type": "boolean", "default": false },
+              "users": { "type": "array", "items": { "type": "string" } },
+              "skills": { "type": "array", "items": { "type": "string" } },
+              "systemPrompt": { "type": "string" }
+            }
+          }
+        },
+        "historyLimit": { "type": "integer", "default": 50 },
+        "allowBots": { "type": "boolean", "default": false },
+        "reactionNotifications": { "type": "string", "enum": ["off", "own", "all", "allowlist"], "default": "own" },
+        "reactionAllowlist": { "type": "array", "items": { "type": "string" } },
+        "replyToMode": { "type": "string", "enum": ["off", "first", "all"], "default": "off" },
+        "thread": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "historyScope": { "type": "string", "enum": ["thread", "channel"], "default": "thread" },
+            "inheritParent": { "type": "boolean", "default": false }
+          }
+        },
+        "actions": {
+          "type": "object",
+          "properties": {
+            "reactions": { "type": "boolean", "default": true },
+            "messages": { "type": "boolean", "default": true },
+            "pins": { "type": "boolean", "default": true },
+            "memberInfo": { "type": "boolean", "default": true },
+            "emojiList": { "type": "boolean", "default": true }
+          }
+        },
+        "slashCommand": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "name": { "type": "string", "default": "openclaw" },
+            "sessionPrefix": { "type": "string" },
+            "ephemeral": { "type": "boolean", "default": true }
+          }
+        },
+        "typingReaction": { "type": "string", "description": "Slack emoji shortcode for typing indicator reaction." },
+        "textChunkLimit": { "type": "integer", "default": 4000 },
+        "chunkMode": { "type": "string", "enum": ["length", "newline"], "default": "length" },
+        "streaming": { "$ref": "#/definitions/streamingMode" },
+        "nativeStreaming": { "type": "boolean", "default": true },
+        "mediaMaxMb": { "type": "number", "default": 20 },
+        "configWrites": { "type": "boolean", "default": true },
+        "defaultAccount": { "type": "string" }
+      }
+    },
+    "signalChannel": {
+      "type": "object",
+      "description": "Signal channel configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "account": { "type": "string", "description": "Optional Signal account phone number binding." },
+        "dmPolicy": { "$ref": "#/definitions/dmPolicy" },
+        "allowFrom": { "$ref": "#/definitions/allowFrom" },
+        "configWrites": { "type": "boolean", "default": true },
+        "reactionNotifications": { "type": "string", "enum": ["off", "own", "all", "allowlist"], "default": "own" },
+        "reactionAllowlist": { "type": "array", "items": { "type": "string" } },
+        "historyLimit": { "type": "integer", "default": 50 },
+        "defaultAccount": { "type": "string" }
+      }
+    },
+    "googlechatChannel": {
+      "type": "object",
+      "description": "Google Chat channel configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "serviceAccountFile": { "type": "string", "description": "Path to Google service account JSON file." },
+        "serviceAccount": { "type": "object", "description": "Inline Google service account JSON." },
+        "serviceAccountRef": { "type": "string", "description": "SecretRef name for the service account." },
+        "audienceType": { "type": "string", "enum": ["app-url", "project-number"] },
+        "audience": { "type": "string" },
+        "webhookPath": { "type": "string" },
+        "botUser": { "type": "string" },
+        "dm": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "policy": { "$ref": "#/definitions/dmPolicy" },
+            "allowFrom": { "$ref": "#/definitions/allowFrom" }
+          }
+        },
+        "groupPolicy": { "$ref": "#/definitions/groupPolicy" },
+        "groups": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "allow": { "type": "boolean" },
+              "requireMention": { "type": "boolean" }
+            }
+          }
+        },
+        "actions": {
+          "type": "object",
+          "properties": {
+            "reactions": { "type": "boolean", "default": true }
+          }
+        },
+        "typingIndicator": { "type": "string", "enum": ["message", "typing", "none"] },
+        "mediaMaxMb": { "type": "number", "default": 20 }
+      }
+    },
+    "mattermostChannel": {
+      "type": "object",
+      "description": "Mattermost channel configuration (requires @openclaw/mattermost plugin).",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "botToken": { "type": "string", "description": "Mattermost bot access token." },
+        "baseUrl": { "type": "string", "description": "Mattermost server base URL." },
+        "dmPolicy": { "$ref": "#/definitions/dmPolicy" },
+        "chatmode": {
+          "type": "string",
+          "enum": ["oncall", "onmessage", "onchar"],
+          "description": "'oncall': respond on @mention. 'onmessage': every message. 'onchar': messages starting with trigger prefix.",
+          "default": "oncall"
+        },
+        "oncharPrefixes": { "type": "array", "items": { "type": "string" }, "description": "Trigger prefixes for onchar mode." },
+        "requireMention": { "type": "boolean", "default": true },
+        "commands": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "native": { "type": "boolean", "default": true },
+            "nativeSkills": { "type": "boolean" },
+            "callbackPath": { "type": "string" },
+            "callbackUrl": { "type": "string" }
+          }
+        },
+        "textChunkLimit": { "type": "integer", "default": 4000 },
+        "chunkMode": { "type": "string", "enum": ["length", "newline"] },
+        "configWrites": { "type": "boolean", "default": true },
+        "defaultAccount": { "type": "string" }
+      }
+    },
+    "imessageChannel": {
+      "type": "object",
+      "description": "iMessage channel configuration (uses imsg CLI).",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "cliPath": { "type": "string", "description": "Path to the imsg CLI binary.", "default": "imsg" },
+        "dbPath": { "type": "string", "description": "Path to Messages SQLite database.", "default": "~/Library/Messages/chat.db" },
+        "remoteHost": { "type": "string", "description": "Remote host for SSH-based setups ('user@host')." },
+        "dmPolicy": { "$ref": "#/definitions/dmPolicy" },
+        "allowFrom": { "$ref": "#/definitions/allowFrom" },
+        "historyLimit": { "type": "integer", "default": 50 },
+        "includeAttachments": { "type": "boolean", "default": false },
+        "attachmentRoots": { "type": "array", "items": { "type": "string" } },
+        "remoteAttachmentRoots": { "type": "array", "items": { "type": "string" } },
+        "mediaMaxMb": { "type": "number", "default": 16 },
+        "service": { "type": "string", "enum": ["auto", "iMessage", "SMS"], "default": "auto" },
+        "region": { "type": "string", "default": "US" },
+        "configWrites": { "type": "boolean", "default": true },
+        "defaultAccount": { "type": "string" }
+      }
+    },
+    "bluebubblesChannel": {
+      "type": "object",
+      "description": "BlueBubbles iMessage proxy channel configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "dmPolicy": { "$ref": "#/definitions/dmPolicy" },
+        "defaultAccount": { "type": "string" }
+      }
+    },
+    "msteamsChannel": {
+      "type": "object",
+      "description": "Microsoft Teams channel configuration (extension-backed).",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "configWrites": { "type": "boolean", "default": true }
+      }
+    },
+    "ircChannel": {
+      "type": "object",
+      "description": "IRC channel configuration (extension-backed).",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "dmPolicy": { "$ref": "#/definitions/dmPolicy" },
+        "configWrites": { "type": "boolean", "default": true },
+        "nickserv": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "service": { "type": "string", "default": "NickServ" },
+            "password": { "type": "string" },
+            "register": { "type": "boolean", "default": false },
+            "registerEmail": { "type": "string" }
+          }
+        },
+        "defaultAccount": { "type": "string" }
+      }
+    }
+  }
+}

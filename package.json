@@ -1,0 +1,121 @@
+{
+  "name": "openclaw-ide-extension",
+  "displayName": "OpenClaw Config",
+  "description": "Full IDE support for OpenClaw config files: validation, autocomplete, hover docs, snippets, and diagnostics.",
+  "version": "1.0.0",
+  "publisher": "openclaw",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/muxammadreza/openclaw-ide-extension.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "openclaw",
+    "config",
+    "json5",
+    "ai-assistant",
+    "validation"
+  ],
+  "activationEvents": [
+    "onLanguage:jsonc",
+    "workspaceContains:**/openclaw.json",
+    "onCommand:openclaw.validateConfig",
+    "onCommand:openclaw.openConfig",
+    "onCommand:openclaw.generateSkeleton"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "jsonc",
+        "filenames": [
+          "openclaw.json"
+        ]
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": [
+          "**/openclaw.json",
+          "*.openclaw.json",
+          "openclaw.json"
+        ],
+        "url": "./schemas/openclaw.schema.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "jsonc",
+        "path": "./snippets/openclaw.code-snippets"
+      }
+    ],
+    "commands": [
+      {
+        "command": "openclaw.validateConfig",
+        "title": "OpenClaw: Validate Config",
+        "icon": "$(check)"
+      },
+      {
+        "command": "openclaw.openConfig",
+        "title": "OpenClaw: Open Config File"
+      },
+      {
+        "command": "openclaw.generateSkeleton",
+        "title": "OpenClaw: Generate Config Skeleton"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "openclaw.validateConfig",
+          "when": "resourceFilename == openclaw.json",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "OpenClaw",
+      "properties": {
+        "openclaw.validate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable semantic validation of openclaw.json."
+        },
+        "openclaw.hoverDocs": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable hover documentation."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "webpack --mode production",
+    "compile:dev": "webpack --mode development",
+    "watch": "webpack --mode development --watch",
+    "lint": "tsc --noEmit",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.85.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11",
+    "vscode-languageserver-types": "^3.17.5"
+  }
+}
