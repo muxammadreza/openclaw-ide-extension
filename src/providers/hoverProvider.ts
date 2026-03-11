@@ -40,9 +40,17 @@ const DOCS: Record<string, string> = {
     '**Default:** `1`',
 
   'agents.defaults.thinkingDefault':
-    '**agents.defaults.thinkingDefault** `"off" | "low" | "medium" | "high" | "adaptive"`\n\n' +
+    '**agents.defaults.thinkingDefault** `"off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "adaptive"`\n\n' +
     'Default thinking depth for models that support extended reasoning (e.g. Anthropic Claude).\n\n' +
-    '**Default:** `"low"`',
+    '| Value | Description |\n|---|---|\n' +
+    '| `"off"` | Disable extended reasoning |\n' +
+    '| `"minimal"` | Minimal reasoning (fastest) |\n' +
+    '| `"low"` | Low reasoning (fast, default) |\n' +
+    '| `"medium"` | Moderate reasoning |\n' +
+    '| `"high"` | Deep reasoning (slower) |\n' +
+    '| `"xhigh"` | Extra-deep reasoning (slowest) |\n' +
+    '| `"adaptive"` | Model chooses depth |\n\n' +
+    '**Default:** `"low"` (when supported)',
 
   'agents.defaults.heartbeat':
     '**agents.defaults.heartbeat** — Periodic autonomous agent runs.\n\n' +
@@ -255,25 +263,24 @@ const DOCS: Record<string, string> = {
     '**logging** — Log output configuration.\n\n' +
     'Set log level, file path, and console format.',
 
-  // Identity
-  identity:
-    '**identity** — Bot identity (name, emoji, theme).\n\n' +
-    'Controls how the bot presents itself in status messages.',
-
   // Hooks
   hooks:
     '**hooks** — Webhook and external integration hooks.\n\n' +
-    'Configure incoming webhooks and Gmail polling.',
+    'Configure incoming webhooks, Gmail polling, and internal agent event handlers.',
 
   // Auth
   auth:
     '**auth** — OAuth profile and API key management.\n\n' +
-    'Named auth profiles for multi-provider setups.',
+    'Named auth profiles for multi-provider setups and credential rotation.\n\n' +
+    '[Docs ↗](https://docs.openclaw.ai/concepts/models#auth-profiles)',
 
-  // Operator
-  operator:
-    '**operator** — Operator/admin access.\n\n' +
-    'List of users or channels with admin-level access to gateway commands.',
+  // Identity (legacy - now under agents.defaults)
+  'agents.defaults.identity':
+    '**agents.defaults.identity** — Agent identity settings.\n\n' +
+    'Controls how the agent presents itself: name, emoji, theme, and avatar.\n\n' +
+    '```json5\nagents: {\n  defaults: {\n    identity: {\n      name: "Claw",\n      emoji: "🐾",\n    },\n  },\n}\n```',
+
+  // Operator (legacy field - removed in newer versions)
 
   // Bindings
   bindings:
@@ -284,6 +291,100 @@ const DOCS: Record<string, string> = {
   web:
     '**web** — WebSocket/web channel settings (used by WhatsApp/Baileys).\n\n' +
     'Controls heartbeat, reconnection backoff, and max reconnect attempts.',
+
+  // New sections in current OpenClaw versions
+
+  meta:
+    '**meta** — Config file metadata.\n\n' +
+    'Written automatically by the gateway when it updates the config. ' +
+    'Contains the last-touched version and timestamp.',
+
+  env:
+    '**env** — Environment variable configuration.\n\n' +
+    'Inline env vars or shell environment import settings.\n\n' +
+    '```json5\nenv: {\n  shellEnv: { enabled: true },\n  vars: { MY_SECRET: "value" },\n}\n```\n\n' +
+    'Values set here are applied when not already present in the process environment.',
+
+  wizard:
+    '**wizard** — Onboarding wizard state.\n\n' +
+    'Written automatically by `openclaw onboard`. Do not edit manually.',
+
+  diagnostics:
+    '**diagnostics** — Diagnostics and observability settings.\n\n' +
+    'Enable OpenTelemetry tracing/metrics/logs, cache trace recording, and diagnostics flags.\n\n' +
+    '[Docs ↗](https://docs.openclaw.ai/concepts/diagnostics)',
+
+  'diagnostics.otel':
+    '**diagnostics.otel** — OpenTelemetry export settings.\n\n' +
+    'Send traces, metrics, and logs to an OTLP-compatible collector (Jaeger, Grafana, etc.).',
+
+  cli:
+    '**cli** — CLI behavior settings.\n\n' +
+    'Customize the CLI banner tagline and other CLI-level preferences.',
+
+  update:
+    '**update** — Auto-update settings.\n\n' +
+    'Configure the update channel (stable/beta/dev) and auto-update behavior.\n\n' +
+    '```json5\nupdate: {\n  channel: "stable",\n  auto: { enabled: true },\n}\n```',
+
+  ui:
+    '**ui** — Control UI appearance settings.\n\n' +
+    'Set the accent color and assistant display name/avatar for the web Control UI.',
+
+  secrets:
+    '**secrets** — External secret backend configuration.\n\n' +
+    'Integrate with 1Password, HashiCorp Vault, or other secret managers for loading API keys.\n\n' +
+    '[Docs ↗](https://docs.openclaw.ai/concepts/secrets)',
+
+  plugins:
+    '**plugins** — Plugin configuration.\n\n' +
+    'Enable/disable installed plugins and set per-plugin config.\n\n' +
+    '```json5\nplugins: {\n  "my-plugin": { enabled: true, config: { key: "value" } },\n}\n```',
+
+  nodeHost:
+    '**nodeHost** — Node host (browser proxy) settings.\n\n' +
+    'Controls whether the gateway can use node-hosted browser proxies.',
+
+  broadcast:
+    '**broadcast** — Broadcast delivery configuration.\n\n' +
+    'Map peer IDs to arrays of agent IDs that should all process broadcast messages.',
+
+  audio:
+    '**audio** — Audio transcription settings.\n\n' +
+    '**Deprecated:** Use `tools.media.audio.models` instead.',
+
+  media:
+    '**media** — Inbound media handling.\n\n' +
+    'Controls filename preservation and TTL for uploaded media files.',
+
+  approvals:
+    '**approvals** — Exec approval forwarding.\n\n' +
+    'Forward shell command approval requests to chat channels for review.',
+
+  discovery:
+    '**discovery** — Gateway discovery settings.\n\n' +
+    'Configure mDNS/Bonjour and wide-area discovery for finding the gateway on the local network.',
+
+  canvasHost:
+    '**canvasHost** — Canvas hosting server.\n\n' +
+    'Serves the Canvas workspace as a static web server with live-reload.\n\n' +
+    '```json5\ncanvasHost: {\n  enabled: true,\n  port: 18793,\n  liveReload: true,\n}\n```',
+
+  talk:
+    '**talk** — Talk Mode (voice/TTS) settings.\n\n' +
+    'Configure the TTS provider for voice responses (ElevenLabs, etc.).\n\n' +
+    '[Docs ↗](https://docs.openclaw.ai/concepts/talk)',
+
+  memory:
+    '**memory** — Vector memory configuration.\n\n' +
+    'Configure the memory backend (builtin or qmd) for semantic memory search.\n\n' +
+    '```json5\nmemory: {\n  backend: "qmd",\n  citations: "auto",\n}\n```\n\n' +
+    '[Docs ↗](https://docs.openclaw.ai/concepts/memory)',
+
+  acp:
+    '**acp** — ACP (Agent Control Protocol) runtime configuration.\n\n' +
+    'Enables running AI coding agents (Claude Code, Codex, etc.) as ACP-backed runtimes.\n\n' +
+    '[Docs ↗](https://docs.openclaw.ai/concepts/acp)',
 };
 
 export class HoverProvider implements vscode.HoverProvider {

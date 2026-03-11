@@ -12,8 +12,17 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Linters", "Other"],
-  "keywords": ["openclaw", "config", "json5", "ai-assistant", "validation"],
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "openclaw",
+    "config",
+    "json5",
+    "ai-assistant",
+    "validation"
+  ],
   "activationEvents": [
     "onLanguage:jsonc",
     "workspaceContains:**/openclaw.json",
@@ -27,12 +36,18 @@
     "languages": [
       {
         "id": "jsonc",
-        "filenames": ["openclaw.json"]
+        "filenames": [
+          "openclaw.json"
+        ]
       }
     ],
     "jsonValidation": [
       {
-        "fileMatch": ["**/openclaw.json", "*.openclaw.json", "openclaw.json"],
+        "fileMatch": [
+          "**/openclaw.json",
+          "*.openclaw.json",
+          "openclaw.json"
+        ],
         "url": "./schemas/openclaw.schema.json"
       }
     ],
@@ -124,6 +139,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/vscode": "^1.85.0",
+    "ts-json-schema-generator": "^2.9.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.89.0",

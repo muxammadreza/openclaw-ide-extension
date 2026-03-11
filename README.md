@@ -17,9 +17,28 @@ Full IDE support for [OpenClaw](https://openclaw.ai) config files (`openclaw.jso
 
 ## Schema discovery (priority order)
 
-1. **Local install** — reads the schema bundled with your installed `openclaw` npm package (version-exact)
-2. **Per-version cache** — schema cached in VS Code global storage after first discovery (offline support)
-3. **Bundled fallback** — comprehensive schema shipped with this extension (used when openclaw is not installed)
+1. **Generated from source** — when openclaw is installed, generates an exact schema by running
+   `ts-json-schema-generator` against the package's TypeScript type declarations
+   (`dist/plugin-sdk/config/types.openclaw.d.ts`). This is the "generate from open-source code"
+   approach that gives a perfect, version-exact schema without guesswork.
+2. **Pre-built schema files** — looks for any pre-built schema files in the openclaw package directory
+3. **Per-version cache** — schema cached in VS Code global storage after first generation (offline support)
+4. **Bundled fallback** — comprehensive schema shipped with this extension (used when openclaw is not installed)
+
+### Regenerating the bundled schema
+
+The bundled `schemas/openclaw.schema.json` was generated from the openclaw npm package TypeScript
+types. To regenerate it for a new openclaw version:
+
+```sh
+node scripts/generate-schema.mjs /path/to/openclaw/package --out schemas/openclaw.schema.json
+```
+
+Or automatically from the installed version:
+
+```sh
+node scripts/generate-schema.mjs "$(npm root -g)/openclaw" --out schemas/openclaw.schema.json
+```
 
 ## Plugin support
 

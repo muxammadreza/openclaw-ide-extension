@@ -55,16 +55,32 @@ export class DiagnosticsProvider {
 
     // ── Plain-text secrets ──────────────────────────────────────────────────
     const secretFields = [
+      // Channel secrets
       { path: ['channels', 'telegram', 'botToken'], key: 'botToken' },
       { path: ['channels', 'discord', 'token'], key: 'token' },
       { path: ['channels', 'slack', 'botToken'], key: 'botToken' },
       { path: ['channels', 'slack', 'appToken'], key: 'appToken' },
       { path: ['channels', 'slack', 'signingSecret'], key: 'signingSecret' },
       { path: ['channels', 'mattermost', 'botToken'], key: 'botToken' },
+      // Model provider API keys (current schema: models.providers.<name>.apiKey)
+      { path: ['models', 'providers', 'openai', 'apiKey'], key: 'apiKey' },
+      { path: ['models', 'providers', 'anthropic', 'apiKey'], key: 'apiKey' },
+      { path: ['models', 'providers', 'google', 'apiKey'], key: 'apiKey' },
+      { path: ['models', 'providers', 'openrouter', 'apiKey'], key: 'apiKey' },
+      { path: ['models', 'providers', 'deepseek', 'apiKey'], key: 'apiKey' },
+      { path: ['models', 'providers', 'mistral', 'apiKey'], key: 'apiKey' },
+      { path: ['models', 'providers', 'xai', 'apiKey'], key: 'apiKey' },
+      { path: ['models', 'providers', 'cohere', 'apiKey'], key: 'apiKey' },
+      // Legacy (pre-v2025): models.<provider>.apiKey — kept for backward compat warning
       { path: ['models', 'openai', 'apiKey'], key: 'apiKey' },
       { path: ['models', 'anthropic', 'apiKey'], key: 'apiKey' },
       { path: ['models', 'google', 'apiKey'], key: 'apiKey' },
       { path: ['models', 'openrouter', 'apiKey'], key: 'apiKey' },
+      // Gateway auth
+      { path: ['gateway', 'auth', 'token'], key: 'token' },
+      { path: ['gateway', 'auth', 'password'], key: 'password' },
+      // Hooks webhook token
+      { path: ['hooks', 'token'], key: 'token' },
     ];
 
     for (const sf of secretFields) {
