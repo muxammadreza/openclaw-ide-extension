@@ -1,0 +1,297 @@
+{
+  "OpenClaw Minimal Config": {
+    "prefix": "openclaw-minimal",
+    "scope": "jsonc",
+    "body": [
+      "{",
+      "  // OpenClaw configuration — https://docs.openclaw.ai/gateway/configuration",
+      "  agents: {",
+      "    defaults: {",
+      "      workspace: \"~/.openclaw/workspace\",",
+      "      model: {",
+      "        primary: \"${1|anthropic/claude-sonnet-4-6,openai/gpt-5.4,google/gemini-3-flash-preview|}\",",
+      "      },",
+      "    },",
+      "  },",
+      "}"
+    ],
+    "description": "Minimal OpenClaw configuration skeleton"
+  },
+
+  "OpenClaw Full Config": {
+    "prefix": "openclaw-full",
+    "scope": "jsonc",
+    "body": [
+      "{",
+      "  // OpenClaw configuration — https://docs.openclaw.ai/gateway/configuration",
+      "  agents: {",
+      "    defaults: {",
+      "      workspace: \"~/.openclaw/workspace\",",
+      "      model: {",
+      "        primary: \"${1:anthropic/claude-sonnet-4-6}\",",
+      "        fallbacks: [\"${2:openai/gpt-5-mini}\"],",
+      "      },",
+      "      timeoutSeconds: ${3:600},",
+      "      maxConcurrent: ${4:3},",
+      "    },",
+      "  },",
+      "  gateway: {",
+      "    port: ${5:18789},",
+      "  },",
+      "  session: {",
+      "    dmScope: \"${6|per-channel-peer,per-peer,main,per-account-channel-peer|}\",",
+      "    reset: {",
+      "      mode: \"${7|daily,idle,manual|}\",",
+      "    },",
+      "  },",
+      "  channels: {",
+      "    $0",
+      "  },",
+      "}"
+    ],
+    "description": "Full OpenClaw configuration skeleton"
+  },
+
+  "OpenClaw WhatsApp Channel": {
+    "prefix": "openclaw-whatsapp",
+    "scope": "jsonc",
+    "body": [
+      "whatsapp: {",
+      "  dmPolicy: \"${1|pairing,allowlist,open,disabled|}\",",
+      "  allowFrom: [\"${2:+15555550123}\"],",
+      "  groupPolicy: \"${3|allowlist,open,disabled|}\",",
+      "  groups: {",
+      "    \"*\": { requireMention: true },",
+      "  },",
+      "  sendReadReceipts: ${4|true,false|},",
+      "},"
+    ],
+    "description": "WhatsApp channel configuration"
+  },
+
+  "OpenClaw Telegram Channel": {
+    "prefix": "openclaw-telegram",
+    "scope": "jsonc",
+    "body": [
+      "telegram: {",
+      "  enabled: true,",
+      "  botToken: \"${1:your-bot-token}\", // or use TELEGRAM_BOT_TOKEN env var",
+      "  dmPolicy: \"${2|pairing,allowlist,open,disabled|}\",",
+      "  allowFrom: [\"${3:tg:123456789}\"],",
+      "  historyLimit: ${4:50},",
+      "  streaming: \"${5|off,partial,block,progress|}\",",
+      "  groups: {",
+      "    \"*\": { requireMention: true },",
+      "  },",
+      "},"
+    ],
+    "description": "Telegram channel configuration"
+  },
+
+  "OpenClaw Discord Channel": {
+    "prefix": "openclaw-discord",
+    "scope": "jsonc",
+    "body": [
+      "discord: {",
+      "  enabled: true,",
+      "  token: \"${1:your-bot-token}\", // or use DISCORD_BOT_TOKEN env var",
+      "  dmPolicy: \"${2|pairing,allowlist,open,disabled|}\",",
+      "  dm: { enabled: true },",
+      "  guilds: {",
+      "    \"${3:guild-id}\": {",
+      "      requireMention: ${4|true,false|},",
+      "      channels: {",
+      "        general: { allow: true },",
+      "      },",
+      "    },",
+      "  },",
+      "  streaming: \"${5|off,partial,block,progress|}\",",
+      "},"
+    ],
+    "description": "Discord channel configuration"
+  },
+
+  "OpenClaw Slack Channel": {
+    "prefix": "openclaw-slack",
+    "scope": "jsonc",
+    "body": [
+      "slack: {",
+      "  enabled: true,",
+      "  botToken: \"${1:xoxb-...}\", // prefer SLACK_BOT_TOKEN env var",
+      "  appToken: \"${2:xapp-...}\", // prefer SLACK_APP_TOKEN env var (Socket Mode)",
+      "  dmPolicy: \"${3|pairing,allowlist,open,disabled|}\",",
+      "  channels: {",
+      "    \"#${4:general}\": {",
+      "      allow: true,",
+      "      requireMention: ${5|true,false|},",
+      "    },",
+      "  },",
+      "  slashCommand: {",
+      "    enabled: true,",
+      "    name: \"openclaw\",",
+      "  },",
+      "},"
+    ],
+    "description": "Slack channel configuration"
+  },
+
+  "OpenClaw Agents Defaults": {
+    "prefix": "openclaw-agents",
+    "scope": "jsonc",
+    "body": [
+      "agents: {",
+      "  defaults: {",
+      "    workspace: \"${1:~/.openclaw/workspace}\",",
+      "    model: {",
+      "      primary: \"${2:anthropic/claude-sonnet-4-6}\",",
+      "      fallbacks: [\"${3:openai/gpt-5-mini}\"],",
+      "    },",
+      "    timeoutSeconds: ${4:600},",
+      "    maxConcurrent: ${5:3},",
+      "    thinkingDefault: \"${6|low,medium,high,adaptive,off|}\",",
+      "    heartbeat: {",
+      "      every: \"${7:30m}\",",
+      "    },",
+      "  },",
+      "},"
+    ],
+    "description": "Agent defaults configuration"
+  },
+
+  "OpenClaw Model Config": {
+    "prefix": "openclaw-model",
+    "scope": "jsonc",
+    "body": [
+      "model: {",
+      "  primary: \"${1|anthropic/claude-opus-4-6,anthropic/claude-sonnet-4-6,openai/gpt-5.4,openai/gpt-5-mini,google/gemini-3.1-pro-preview,google/gemini-3-flash-preview|}\",",
+      "  fallbacks: [\"${2:openai/gpt-5-mini}\"],",
+      "},"
+    ],
+    "description": "Model configuration with primary and fallbacks"
+  },
+
+  "OpenClaw Gateway Config": {
+    "prefix": "openclaw-gateway",
+    "scope": "jsonc",
+    "body": [
+      "gateway: {",
+      "  port: ${1:18789},",
+      "  host: \"${2:127.0.0.1}\",",
+      "  auth: {",
+      "    enabled: ${3|true,false|},",
+      "  },",
+      "},"
+    ],
+    "description": "Gateway server configuration"
+  },
+
+  "OpenClaw Session Config": {
+    "prefix": "openclaw-session",
+    "scope": "jsonc",
+    "body": [
+      "session: {",
+      "  dmScope: \"${1|per-channel-peer,per-peer,main,per-account-channel-peer|}\",",
+      "  reset: {",
+      "    mode: \"${2|daily,idle,manual|}\",",
+      "    atHour: ${3:4},",
+      "  },",
+      "  maintenance: {",
+      "    pruneAfter: \"${4:30d}\",",
+      "    maxEntries: ${5:500},",
+      "  },",
+      "},"
+    ],
+    "description": "Session management configuration"
+  },
+
+  "OpenClaw Cron Job": {
+    "prefix": "openclaw-cron",
+    "scope": "jsonc",
+    "body": [
+      "{",
+      "  id: \"${1:daily-brief}\",",
+      "  schedule: \"${2:0 9 * * 1-5}\", // weekdays at 9am",
+      "  prompt: \"${3:Give me a brief summary of pending tasks.}\",",
+      "  to: \"${4:+15555550123}\",",
+      "  enabled: true,",
+      "},"
+    ],
+    "description": "A cron job entry for OpenClaw"
+  },
+
+  "OpenClaw Tools Config": {
+    "prefix": "openclaw-tools",
+    "scope": "jsonc",
+    "body": [
+      "tools: {",
+      "  allow: [\"${1|exec,process,read,write,browser,canvas,media,skills|}\"],",
+      "  elevated: {",
+      "    enabled: ${2|true,false|},",
+      "    allowFrom: {",
+      "      whatsapp: [\"${3:+15555550123}\"],",
+      "    },",
+      "  },",
+      "},"
+    ],
+    "description": "Tools access configuration"
+  },
+
+  "OpenClaw Heartbeat": {
+    "prefix": "openclaw-heartbeat",
+    "scope": "jsonc",
+    "body": [
+      "heartbeat: {",
+      "  every: \"${1:30m}\",",
+      "  model: \"${2:openai/gpt-5-mini}\",",
+      "  target: \"${3|none,last,whatsapp,telegram,discord,slack|}\",",
+      "  lightContext: ${4|false,true|},",
+      "},"
+    ],
+    "description": "Heartbeat configuration"
+  },
+
+  "OpenClaw Compaction": {
+    "prefix": "openclaw-compaction",
+    "scope": "jsonc",
+    "body": [
+      "compaction: {",
+      "  mode: \"${1|default,safeguard|}\",",
+      "  identifierPolicy: \"${2|strict,off,custom|}\",",
+      "  memoryFlush: {",
+      "    enabled: ${3|true,false|},",
+      "  },",
+      "},"
+    ],
+    "description": "Session compaction configuration"
+  },
+
+  "OpenClaw Model Entry": {
+    "prefix": "openclaw-model-entry",
+    "scope": "jsonc",
+    "body": [
+      "\"${1:anthropic/claude-sonnet-4-6}\": {",
+      "  alias: \"${2:sonnet}\",",
+      "  params: {",
+      "    temperature: ${3:0.7},",
+      "  },",
+      "},"
+    ],
+    "description": "A model catalog entry with alias and params"
+  },
+
+  "OpenClaw Named Agent": {
+    "prefix": "openclaw-agent",
+    "scope": "jsonc",
+    "body": [
+      "{",
+      "  id: \"${1:coder}\",",
+      "  name: \"${2:Coding Assistant}\",",
+      "  workspace: \"${3:~/Projects}\",",
+      "  model: \"${4:anthropic/claude-opus-4-6}\",",
+      "  systemPrompt: \"${5:You are a helpful coding assistant.}\",",
+      "  skills: [\"${6:git}\"],",
+      "},"
+    ],
+    "description": "A named agent definition"
+  }
+}
