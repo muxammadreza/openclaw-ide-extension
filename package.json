@@ -12,41 +12,27 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": [
-    "Linters",
-    "Other"
-  ],
-  "keywords": [
-    "openclaw",
-    "config",
-    "json5",
-    "ai-assistant",
-    "validation"
-  ],
+  "categories": ["Linters", "Other"],
+  "keywords": ["openclaw", "config", "json5", "ai-assistant", "validation"],
   "activationEvents": [
     "onLanguage:jsonc",
     "workspaceContains:**/openclaw.json",
     "onCommand:openclaw.validateConfig",
     "onCommand:openclaw.openConfig",
-    "onCommand:openclaw.generateSkeleton"
+    "onCommand:openclaw.generateSkeleton",
+    "onCommand:openclaw.refreshSchema"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "languages": [
       {
         "id": "jsonc",
-        "filenames": [
-          "openclaw.json"
-        ]
+        "filenames": ["openclaw.json"]
       }
     ],
     "jsonValidation": [
       {
-        "fileMatch": [
-          "**/openclaw.json",
-          "*.openclaw.json",
-          "openclaw.json"
-        ],
+        "fileMatch": ["**/openclaw.json", "*.openclaw.json", "openclaw.json"],
         "url": "./schemas/openclaw.schema.json"
       }
     ],
@@ -69,6 +55,15 @@
       {
         "command": "openclaw.generateSkeleton",
         "title": "OpenClaw: Generate Config Skeleton"
+      },
+      {
+        "command": "openclaw.refreshSchema",
+        "title": "OpenClaw: Refresh Schema (re-detect version & plugins)",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "openclaw.showStatus",
+        "title": "OpenClaw: Show Status"
       }
     ],
     "menus": {
@@ -77,6 +72,17 @@
           "command": "openclaw.validateConfig",
           "when": "resourceFilename == openclaw.json",
           "group": "navigation"
+        },
+        {
+          "command": "openclaw.refreshSchema",
+          "when": "resourceFilename == openclaw.json",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "openclaw.validateConfig",
+          "when": "resourceFilename == openclaw.json"
         }
       ]
     },
@@ -92,6 +98,16 @@
           "type": "boolean",
           "default": true,
           "description": "Enable/disable hover documentation."
+        },
+        "openclaw.binaryPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the openclaw binary. Leave empty for automatic detection from PATH and common install locations."
+        },
+        "openclaw.configPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to your openclaw.json config file. Leave empty to use the default ~/.openclaw/openclaw.json."
         }
       }
     }

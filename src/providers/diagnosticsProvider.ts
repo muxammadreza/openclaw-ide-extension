@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { parseConfig, ParsedConfig } from '../parser';
+import { parseConfig } from '../parser';
 
 /**
  * Semantic diagnostics for openclaw.json beyond what JSON schema covers.
